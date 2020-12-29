@@ -9,7 +9,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <getopt.h>
+
 #define BUF_LEN 48000
 #define DEFAULT_FREQ 440
 #define DEFAULT_DURATION 1
@@ -80,7 +81,7 @@ void writeBuf(float* buf, int nbFrames, int nbTimes) {
       // Sending the sound
       g_frames += snd_pcm_writei(g_handle, buf, nbFrames);
   }
-  printf("WriteBuf nbFrames: %d\n", g_frames);
+  // printf("WriteBuf nbFrames: %d\n", g_frames);
 
 }
 //-----------------------------------------
@@ -98,15 +99,7 @@ void playFreq(float freq, float dur) {
     int nbSamples = rate * channels * dur;
     int nbTimes = nbSamples / BUF_LEN;
     int restFrames = nbSamples % BUF_LEN;
-    printf("restFrames: %d\n", restFrames);
-    /*
-    for (int i=0; i < nbBuf; i++) {
-        buf = genTone(freq);
-        writeAudio(buf, BUF_LEN);
-    }
-    printf("nbFrames: %d\n", g_frames);
-    */
-
+    // printf("restFrames: %d\n", restFrames);
     if (nbSamples >0) {
         buf = genTone(freq);
         if (nbTimes >0) {
@@ -117,6 +110,7 @@ void playFreq(float freq, float dur) {
         }
     
     }
+    // printf("nbFrames: %d\n", g_frames);
 
 }
 //-----------------------------------------
@@ -132,43 +126,108 @@ void playSeq(float freq, float dur, int start, int stop, float step) {
 }
 //-----------------------------------------
 
+void playNote(int note, float dur) {
+    // playing note number
+    float freq = note*27.5; // temporary
+    playFreq(freq, dur);	
+
+}
+//-----------------------------------------
+
 
 int main(int argc, char *argv[]) {
     int err;
-    int def_start =0;
-    int def_stop=1;
-    float def_step =1;
+    #define defFreq 440
+    #define defDur 1
+    #define defNote 36
+    
+    float freq = defFreq; // in hertz
+    float dur = defDur; // in seconds
+    int note = defNote;
+    int start =0;
+    int stop =1;
+    float step =1;
+    int mode =0;
     int isSeq =0;
-    if (argc > 3) isSeq =1;
+    int optIndex =0;
+
+    while (( optIndex = getopt(argc, argv, "d:f:F:hn:N:s:S:t:")) != -1) {
+        switch (optIndex) {
+            case 'd':
+                dur = atof(optarg); break;
+            case 'f':
+                mode =1;
+                freq = atof(optarg); break;
+            case 'F':
+                mode =2;
+                freq = atof(optarg); break;
+            case 'h':
+                printf("Print this Help!\n");
+                return 0;
+            case 'n':
+                mode =3;
+                note = strtol(optarg, NULL, 10); break;
+            case 'N':
+                mode =4;
+                note = strtol(optarg, NULL, 10); break;
+            case 's':
+                start = strtol(optarg, NULL, 10); break;
+            case 'S':
+                stop = strtol(optarg, NULL, 10); break;
+            case 't':
+                step = atof(optarg); break;
+
+            default:
+                printf("Option incorrect\n");
+                return 1;
+          }
+      
+    }
     
     // SINE WAVE
-    float freq = (argc > 1) ? atof(argv[1]) : DEFAULT_FREQ;
-    if (freq == 0) {
-      fprintf(stderr, "AlsaTonic: Invalid frequency.\n");
-      return EXIT_FAILURE;
-    }
-
-    float duration = (argc > 2) ? atof(argv[2]) : DEFAULT_DURATION;
-    if (duration == 0) {
-      fprintf(stderr, "AlsaTonic: Invalid duration.\n");
-      return EXIT_FAILURE;
-    }
-    
-    int start = (argc > 3) ? strtol(argv[3], NULL, 10) : def_start;
-    int stop = (argc > 4) ? strtol(argv[4], NULL, 10) : def_stop;
-    float step = (argc > 5) ? atof(argv[5]) : def_step;
+       
+    /*
+    start = (argc > 3) ? strtol(argv[3], NULL, 10) : 0;
+    stop = (argc > 4) ? strtol(argv[4], NULL, 10) : 0;
+    step = (argc > 5) ? atof(argv[5]) : 1;
+    */
 
     if (err = openDevice()) {
         return EXIT_FAILURE;
     }
     
-    if (!isSeq) {
-        printf("Playing freq, Sine tone at %.3fHz during %.2f seconds.\n", freq, duration);
-        playFreq(freq, duration);
-    } else {
-        printf("Playing seq, Sine tone at %.3fHz during %.2f seconds.\n", freq, duration);
-        playSeq(freq, duration, start, stop, step);
-    }
+    // playing mode
+    // without options
+    if (mode == 0) {
+        freq = (argc > 1) ? atof(argv[1]) : defFreq;
+        if (freq == 0) {
+          fprintf(stderr, "AlsaTonic: Invalid frequency.\n");
+          return EXIT_FAILURE;
+        }
+
+        dur = (argc > 2) ? atof(argv[2]) : defDur;
+        if (dur == 0) {
+          fprintf(stderr, "AlsaTonic: Invalid duration.\n");
+          return EXIT_FAILURE;
+        }
+        printf("Playing freq, Sine tone at %.3fHz during %.3f secs.\n", freq, dur);
+        playFreq(freq, dur);
+
+    } else if (mode == 1) {
+        printf("Playing Freq, Sine tone at %.3fHz during %.3f sec.\n", freq, dur);
+        playFreq(freq, dur);
+    } else if (mode == 2) {
+        printf("Playing SeqFreq, Sine tone at %.3fHz, during %.3f secs, start: %d, stop: %d, step: %.3f.\n", freq, dur, start, stop, step);
+        playSeq(freq, dur, start, stop, step);
+
+    } else if (mode == 3) {
+        printf("Playing Note at %d, during %.3f secs.\n", note, dur);
+        playNote(note, dur);
+    } 
+     
+    printf("nbFrames played: %d\n", g_frames);
+
+
     closeDevice();
 
     return EXIT_SUCCESS;
