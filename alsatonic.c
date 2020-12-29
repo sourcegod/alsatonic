@@ -9,22 +9,33 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define BUFFER_LEN 22050 // 48000
+#include <time.h>
+#define BUF_LEN 48000
 #define DEFAULT_FREQ 440
 #define DEFAULT_DURATION 1
-float g_buffer[BUFFER_LEN];
+float g_buffer[BUF_LEN];
 snd_pcm_t *g_handle;
 snd_pcm_sframes_t g_frames;
+int channels =1;
+snd_pcm_format_t format = SND_PCM_FORMAT_FLOAT;
+int rate = 48000;
+
 
 float* genTone(float freq) {
     // must create a pointer to return buffer
-    // float *buf = malloc(sizeof(float) * BUFFER_LEN);
-    for (int i=0; i<BUFFER_LEN ; i++) {
-		    g_buffer[i] = sin(2*M_PI * freq / BUFFER_LEN * i); // Creating the sinusoid
+    // float *buf = malloc(sizeof(float) * BUF_LEN);
+    float vol =1;
+    float t = 2*M_PI*freq/(rate*channels);
+    // int nbSamples = rate * channels * dur;
+    // printf("nbSamples: %d\n", nbSamples);
+    int maxSamp = 32767;
+    float* buf = g_buffer;
+    for (int i=0; i< BUF_LEN; i++) {
+        // val = (int)maxSamp*vol*sin(t*i);
+        g_buffer[i] = sin(t*i);
     }
 
-      return g_buffer;
+    return g_buffer;
 }
 //-----------------------------------------
 
@@ -40,12 +51,14 @@ int openDevice() {
     }
 
     if ((err = snd_pcm_set_params(g_handle,
-        SND_PCM_FORMAT_FLOAT,
+        format,
+        // SND_PCM_FORMAT_S16_LE,
         SND_PCM_ACCESS_RW_INTERLEAVED,
-        1,
-        BUFFER_LEN,
-        1,
-        500000)) < 0) {	 
+        channels,
+        // BUF_LEN,
+        rate,
+        1, /* period */
+        500000)) < 0) {	 /* latency: 0.5sec */ 
       fprintf(stderr, "AlsaTonic: Playback open error: %s\n", snd_strerror(err));
       return EXIT_FAILURE;
     }
@@ -55,25 +68,56 @@ int openDevice() {
 
 void closeDevice() {
     // closing sound device
+    // necessary to flush and send short sample
+    snd_pcm_drain(g_handle);
 	  snd_pcm_close(g_handle);
 
 }
 //-----------------------------------------
 
-void writeBuf(float freq, int duration) {
-  float* buf;
-  for (int i=0 ; i < duration ; i++) {
-    buf = genTone(freq);
-		g_frames = snd_pcm_writei(g_handle, buf, BUFFER_LEN); // Sending the sound
-    // printf("nbFrames: %d", g_frames);
+void writeBuf(float* buf, int nbFrames, int nbTimes) {
+  for (int i=0; i < nbTimes; i++) {
+      // Sending the sound
+      g_frames += snd_pcm_writei(g_handle, buf, nbFrames);
   }
+  printf("WriteBuf nbFrames: %d\n", g_frames);
 
+}
+//-----------------------------------------
+
+void writeAudio(unsigned int nbFrames) {
+      // Sending the sound
+      int frames = snd_pcm_writei(g_handle, g_buffer, nbFrames);
 }
 //-----------------------------------------
 
 void playFreq(float freq, float dur) {
     // playing one freq
-    writeBuf(freq, dur);	
+    //
+    float* buf;
+    int nbSamples = rate * channels * dur;
+    int nbTimes = nbSamples / BUF_LEN;
+    int restFrames = nbSamples % BUF_LEN;
+    printf("restFrames: %d\n", restFrames);
+    /*
+    for (int i=0; i < nbBuf; i++) {
+        buf = genTone(freq);
+        writeAudio(buf, BUF_LEN);
+    }
+    printf("nbFrames: %d\n", g_frames);
+    */
+
+    if (nbSamples >0) {
+        buf = genTone(freq);
+        if (nbTimes >0) {
+            writeBuf(buf, BUF_LEN, nbTimes);	
+        }
+        if (restFrames > 0) {
+            writeBuf(buf, restFrames, 1);
+        }
+    
+    }
+
 }
 //-----------------------------------------
 
@@ -81,7 +125,7 @@ void playSeq(float freq, float dur, int start, int stop, float step) {
     // playing sequence freq
     int iStep = (int)(step);
     for (int i=start; i<stop; i += iStep){
-        writeBuf(freq, dur);	
+        playFreq(freq, dur);	
         freq += step;
     }
 
