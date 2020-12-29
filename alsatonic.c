@@ -12,8 +12,11 @@
 #include <getopt.h>
 
 #define BUF_LEN 48000
-#define DEFAULT_FREQ 440
-#define DEFAULT_DURATION 1
+#define DEF_FREQ 440
+#define DEF_DUR 1
+#define DEF_NOTE 48
+#define MAX_NOTE 87
+
 float g_buffer[BUF_LEN];
 snd_pcm_t *g_handle;
 snd_pcm_sframes_t g_frames;
@@ -94,7 +97,6 @@ void writeAudio(unsigned int nbFrames) {
 
 void playFreq(float freq, float dur) {
     // playing one freq
-    //
     float* buf;
     int nbSamples = rate * channels * dur;
     int nbTimes = nbSamples / BUF_LEN;
@@ -129,12 +131,21 @@ void playSeq(float freq, float dur, int start, int stop, float step) {
 void playNote(int numNote, float dur) {
     // playing note number
     float refNote = 27.5; // note reference A0
-    #define maxNote 87
     // test whether note between 0 and note_max
-    numNote = (numNote < 0) ? 0 : (numNote > maxNote) ? maxNote : numNote;
+    numNote = (numNote < 0) ? DEF_NOTE : (numNote > MAX_NOTE) ? MAX_NOTE : numNote;
     float freq = refNote*pow(2, numNote*1/12.0);
-    // float freq = note*27.5; // temporary
     playFreq(freq, dur);	
+    printf("Freq: %.3f\n", freq);
+
+
+}
+//-----------------------------------------
+
+void playSeqNote(int numNote, float dur, int start, int stop, int step) {
+    // playing sequence notes
+    for (int i=start; i<stop; i += step) {
+        playNote(numNote+i, dur);	
+    }
 
 }
 //-----------------------------------------
@@ -142,13 +153,10 @@ void playNote(int numNote, float dur) {
 
 int main(int argc, char *argv[]) {
     int err;
-    #define defFreq 440
-    #define defDur 1
-    #define defNote 36
-    
-    float freq = defFreq; // in hertz
-    float dur = defDur; // in seconds
-    int note = defNote;
+   
+    float freq = DEF_FREQ; // in hertz
+    float dur = DEF_DUR; // in seconds
+    int note = DEF_NOTE;
     int start =0;
     int stop =1;
     float step =1;
@@ -204,13 +212,13 @@ int main(int argc, char *argv[]) {
     // playing mode
     // without options
     if (mode == 0) {
-        freq = (argc > 1) ? atof(argv[1]) : defFreq;
+        freq = (argc > 1) ? atof(argv[1]) : DEF_FREQ;
         if (freq == 0) {
           fprintf(stderr, "AlsaTonic: Invalid frequency.\n");
           return EXIT_FAILURE;
         }
 
-        dur = (argc > 2) ? atof(argv[2]) : defDur;
+        dur = (argc > 2) ? atof(argv[2]) : DEF_DUR;
         if (dur == 0) {
           fprintf(stderr, "AlsaTonic: Invalid duration.\n");
           return EXIT_FAILURE;
@@ -228,6 +236,9 @@ int main(int argc, char *argv[]) {
     } else if (mode == 3) {
         printf("Playing Note at %d, during %.3f secs.\n", note, dur);
         playNote(note, dur);
+    } else if (mode == 4) {
+        printf("Playing sequence Note at note: %d, during %.3f secs, start: %d, stop: %d, step: %.3f.\n", note, dur, start, stop, step);
+        playSeqNote(note, dur, start, stop, step);
     } 
      
     printf("nbFrames played: %d\n", g_frames);
