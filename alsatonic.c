@@ -126,9 +126,14 @@ void playSeq(float freq, float dur, int start, int stop, float step) {
 }
 //-----------------------------------------
 
-void playNote(int note, float dur) {
+void playNote(int numNote, float dur) {
     // playing note number
-    float freq = note*27.5; // temporary
+    float refNote = 27.5; // note reference A0
+    #define maxNote 87
+    // test whether note between 0 and note_max
+    numNote = (numNote < 0) ? 0 : (numNote > maxNote) ? maxNote : numNote;
+    float freq = refNote*pow(2, numNote*1/12.0);
+    // float freq = note*27.5; // temporary
     playFreq(freq, dur);	
 
 }
