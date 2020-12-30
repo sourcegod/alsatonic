@@ -14,5 +14,18 @@ Just write in a console :
 
 ### How to run it ?
 
-This is the syntax of the program :  
+Examples
 `./alsatonic [frequency, default 440Hz] [duration, default 1 seconds]`  
+`./alsatonic -h`
+display the help.
+`./alsatonic -F 440 -d 0.2 -s 0 -S 400 -t 20`
+Play sequence frequencies from 440 HZ, with duration 0.2 seconds, starting at
+440+0 HZ, stopping at 440+400 HZ,  by step 20 HZ.
+
+`./alsatonic -n 48 -d 3`
+Play note number 48 (A4), with duration 3 seconds.
+
+`./alsatonic -N 51 -d 0.2 -s 0 -S 13 -t 1`
+Play sequence notes from 51 note number, with duration 0.5 seconds, starting at
+51 note number (C5), stopping at 63 note number (C6),  by step 1 note.
+

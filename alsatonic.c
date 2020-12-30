@@ -102,8 +102,9 @@ void writeBuf(float* buf, int nbFrames, int nbTimes) {
 //-----------------------------------------
 
 void writeAudio(unsigned int nbFrames) {
-      // Sending the sound
-      int frames = snd_pcm_writei(g_handle, g_buffer, nbFrames);
+    /// Not used, just for notes
+    // Sending the sound
+    int frames = snd_pcm_writei(g_handle, g_buffer, nbFrames);
 }
 //-----------------------------------------
 
@@ -131,6 +132,7 @@ void playFreq(float freq, float dur) {
 
 void playSeq(float freq, float dur, int start, int stop, float step) {
     // playing sequence freq
+    // step is in float for frequency
     int iStep = (int)(step);
     for (int i=start; i<stop; i += iStep){
         playFreq(freq, dur);	
@@ -156,7 +158,8 @@ void playNote(int numNote, float dur) {
 void playSeqNote(int numNote, float dur, int start, int stop, int step) {
     // playing sequence notes
     for (int i=start; i<stop; i += step) {
-        playNote(numNote+i, dur);	
+        playNote(numNote, dur);	
+        numNote += step;
     }
 
 }
@@ -210,13 +213,6 @@ int main(int argc, char *argv[]) {
     }
     
     // SINE WAVE
-       
-    /*
-    start = (argc > 3) ? strtol(argv[3], NULL, 10) : 0;
-    stop = (argc > 4) ? strtol(argv[4], NULL, 10) : 0;
-    step = (argc > 5) ? atof(argv[5]) : 1;
-    */
-
     if (err = openDevice()) {
         return EXIT_FAILURE;
     }
