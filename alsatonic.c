@@ -16,7 +16,6 @@
 #define DEF_DUR 1
 #define DEF_NOTE 48
 #define MAX_NOTE 87
-
 float g_buffer[BUF_LEN];
 snd_pcm_t *g_handle;
 snd_pcm_sframes_t g_frames;
@@ -24,6 +23,19 @@ int channels =1;
 snd_pcm_format_t format = SND_PCM_FORMAT_FLOAT;
 int rate = 48000;
 
+
+#define HELP_TEXT "AlsaTonic Usage:\n\
+  freq dur : without options, play at frequency freq, in duration dur in seconds.\n\
+  -d dur : set duration in seconds (default: 1 sec)\n\
+  -f freq : set frequency in HZ, and play it. (default: 440 HZ)\n\
+  -F freq : set frequency in HZ, and play the sequence freq between start and stop optionss\n\
+  -h : print this Help\n\
+  -n note : set the note number and play it. (default: 48)\n\
+  -N note : set note number and play the notes sequence between start and stop options\n\
+  -s start : set start frequency or note for sequence (default: 0)\n\
+  -S stop : set stop frequency or note for sequence (default: 1)\n\
+  -t step : set step frequency or note for sequence (default: 1)\n\n"
+//-----------------------------------------
 
 float* genTone(float freq) {
     // must create a pointer to return buffer
@@ -175,7 +187,7 @@ int main(int argc, char *argv[]) {
                 mode =2;
                 freq = atof(optarg); break;
             case 'h':
-                printf("Print this Help!\n");
+                printf(HELP_TEXT);
                 return 0;
             case 'n':
                 mode =3;
