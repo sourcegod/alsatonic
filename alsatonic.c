@@ -176,7 +176,6 @@ int main(int argc, char *argv[]) {
     int stop =1;
     float step =1;
     int mode =0;
-    int isSeq =0;
     int optIndex =0;
 
     while (( optIndex = getopt(argc, argv, "d:f:F:hn:N:s:S:t:")) != -1) {
@@ -222,17 +221,29 @@ int main(int argc, char *argv[]) {
     if (mode == 0) {
         freq = (argc > 1) ? atof(argv[1]) : DEF_FREQ;
         if (freq == 0) {
-          fprintf(stderr, "AlsaTonic: Invalid frequency.\n");
-          return EXIT_FAILURE;
+            fprintf(stderr, "AlsaTonic: Invalid frequency.\n");
+            return EXIT_FAILURE;
         }
 
         dur = (argc > 2) ? atof(argv[2]) : DEF_DUR;
         if (dur == 0) {
-          fprintf(stderr, "AlsaTonic: Invalid duration.\n");
-          return EXIT_FAILURE;
+            fprintf(stderr, "AlsaTonic: Invalid duration.\n");
+            return EXIT_FAILURE;
         }
-        printf("Playing freq, Sine tone at %.3fHz during %.3f secs.\n", freq, dur);
-        playFreq(freq, dur);
+        
+        start = (argc > 3) ? strtol(argv[3], NULL, 10) : -1;
+        stop = (argc > 4) ? strtol(argv[4], NULL, 10) : 0;
+        step = (argc > 5) ? atof(argv[5]) : 1;
+
+        // Playing freq
+        if (start == -1) {
+            printf("Playing freq, Sine tone at %.3fHz during %.3f secs.\n", freq, dur);
+            playFreq(freq, dur);
+        // Playing sequence freq
+        } else {
+            printf("Playing SeqFreq, Sine tone at %.3fHz, during %.3f secs, start: %d, stop: %d, step: %.3f.\n", freq, dur, start, stop, step);
+            playSeq(freq, dur, start, stop, step);
+        }
 
     } else if (mode == 1) {
         printf("Playing Freq, Sine tone at %.3fHz during %.3f sec.\n", freq, dur);
